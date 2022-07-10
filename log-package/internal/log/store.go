@@ -53,6 +53,7 @@ func (store *store) Append(p []byte) (numberOfBytes uint64, position uint64, err
 	return uint64(w), position, nil
 }
 
+// Returns the record stored at the given position
 func (store *store) Read(position uint64) ([]byte, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
@@ -68,4 +69,22 @@ func (store *store) Read(position uint64) ([]byte, error) {
 		return nil, err
 	}
 	return bytes, nil
+}
+
+func (store *store) ReadAt(p []byte, off int64) (int, error) {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	if err := store.buf.Flush(); err != nil {
+		return 0, err
+	}
+	return store.file.ReadAt(p, off)
+}
+
+func (store *store) Close() (error) {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	if err := store.buf.Flush(); err != nil {
+		return err
+	}
+	return store.file.Close()	
 }
