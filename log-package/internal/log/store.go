@@ -53,3 +53,19 @@ func (store *store) Append(p []byte) (numberOfBytes uint64, position uint64, err
 	return uint64(w), position, nil
 }
 
+func (store *store) Read(position uint64) ([]byte, error) {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	if err := store.buf.Flush(); err != nil {
+		return nil, err
+	}
+	size := make([]byte, lenWidth)
+	if _, err := store.file.ReadAt(size, int64(position)); err != nil {
+		return nil, err
+	}
+	bytes := make([]byte, enc.Uint64(size))
+	if _, err := store.file.ReadAt(bytes, int64(position + lenWidth)); err != nil {
+		return nil, err
+	}
+	return bytes, nil
+}
